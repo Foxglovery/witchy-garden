@@ -20,6 +20,10 @@ export default function GardenPlanner() {
   const [outlineColor, setOutlineColor] = useState("#000000");
   const [placing, setPlacing] = useState(false);
 
+  // New: track which element is hovered, and assign each a random glow color
+  const [hoveredId, setHoveredId] = useState(null);
+  const [hoverColors, setHoverColors] = useState({});
+
   const handleCanvasClick = (e) => {
     if (!placing || !selectedShape) return;
     const rect = e.target.getBoundingClientRect();
@@ -45,7 +49,10 @@ export default function GardenPlanner() {
   };
 
   return (
-    <div className="w-screen h-screen bg-cover p-4" style={{ backgroundImage: "url('/grove.jpg')" }}>
+    <div
+      className="w-screen h-screen bg-cover p-4"
+      style={{ backgroundImage: "url('/grove.jpg')" }}
+    >
       <div className="mb-4 bg-white/80 p-2 rounded-xl shadow-md">
         <h1 className="text-xl font-bold mb-2">Witchy Garden Planner</h1>
 
@@ -88,10 +95,16 @@ export default function GardenPlanner() {
             />
             <SketchPicker
               color={outlineColor}
-              onChangeComplete={(color) => setOutlineColor(color.hex)}
+              onChangeComplete={(color) =>
+                setOutlineColor(color.hex)
+              }
             />
             <p className="text-sm italic text-gray-700">
-              Tap the grove to place your {selectedShape.type === 'rect' ? `${selectedShape.width}x${selectedShape.height}` : `${selectedShape.diameter}ft container`}.
+              Tap the grove to place your{" "}
+              {selectedShape?.type === "rect"
+                ? `${selectedShape.width}x${selectedShape.height}`
+                : `${selectedShape.diameter}ft container`}
+              .
             </p>
           </div>
         )}
@@ -101,24 +114,51 @@ export default function GardenPlanner() {
         className="w-full h-[85%] relative border border-black rounded-xl overflow-hidden"
         onClick={handleCanvasClick}
       >
-        {elements.map((el) => (
-          <div
-            key={el.id}
-            className="absolute flex items-center justify-center text-xs font-bold"
-            style={{
-              top: el.y,
-              left: el.x,
-              width: el.type === "rect" ? el.width * 20 : el.diameter * 20,
-              height: el.type === "rect" ? el.height * 20 : el.diameter * 20,
-              border: `2px solid ${el.outlineColor}`,
-              borderRadius: el.type === "circle" ? "9999px" : "0",
-              backgroundColor: "rgba(255,255,255,0.4)",
-              transform: "translate(-50%, -50%)",
-            }}
-          >
-            {el.plantName}
-          </div>
-        ))}
+        {elements.map((el) => {
+          // Ensure each element has a random glow color
+          if (!hoverColors[el.id]) {
+            setHoverColors((prev) => ({
+              ...prev,
+              [el.id]: `hsl(${Math.floor(Math.random() * 360)},100%,75%)`,
+            }));
+          }
+          const isHovered = hoveredId === el.id;
+          const glowColor = hoverColors[el.id];
+
+          return (
+            <div
+              key={el.id}
+              className="absolute flex items-center justify-center text-xs font-bold transition-all"
+              onMouseEnter={() => setHoveredId(el.id)}
+              onMouseLeave={() => setHoveredId(null)}
+              style={{
+                top: el.y,
+                left: el.x,
+                width:
+                  el.type === "rect"
+                    ? el.width * 20
+                    : el.diameter * 20,
+                height:
+                  el.type === "rect"
+                    ? el.height * 20
+                    : el.diameter * 20,
+                border: `${
+                  isHovered ? 4 : 2
+                }px solid ${
+                  isHovered ? glowColor : el.outlineColor
+                }`,
+                borderRadius: el.type === "circle" ? "9999px" : "0",
+                backgroundColor: "rgba(255,255,255,0.4)",
+                transform: "translate(-50%, -50%)",
+                boxShadow: isHovered
+                  ? `0 0 12px ${glowColor}`
+                  : "none",
+              }}
+            >
+              {el.plantName}
+            </div>
+          );
+        })}
       </div>
     </div>
   );
